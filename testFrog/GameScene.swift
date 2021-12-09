@@ -8,81 +8,197 @@
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
-    
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
+class GameScene: SKScene, SKPhysicsContactDelegate {
+ 
+    var frog = SKSpriteNode()
     
     override func didMove(to view: SKView) {
+        createFrog()
+        createEnvironment()
+        self.physicsWorld.contactDelegate = self
+        self.physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
+        createForever(duration: 4)
+    }
+    
+    // MARK: 개구리 만들기
+    func createFrog() {
+        frog = SKSpriteNode(imageNamed: "frog")
+        frog.position = CGPoint(x: self.size.width/2 - 100, y: 200)
+        frog.setScale(0.4)
+        frog.zPosition = 4
+        frog.physicsBody = SKPhysicsBody(circleOfRadius: frog.size.height / 2)
+        frog.physicsBody?.categoryBitMask = PhysicsCategory.frog
+        frog.physicsBody?.contactTestBitMask = PhysicsCategory.land | PhysicsCategory.wallDown | PhysicsCategory.wallUp | PhysicsCategory.score
+        frog.physicsBody?.collisionBitMask = PhysicsCategory.land | PhysicsCategory.wallDown | PhysicsCategory.wallUp // 부딫혔을 때의를 확인해야함
+        frog.physicsBody?.affectedByGravity = true
+        frog.physicsBody?.isDynamic = true
+        self.addChild(frog)
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
+    }
+    
+    // MARK: 배경화면 만들기
+    func createEnvironment() {
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
+        let environmentAtlas = SKTextureAtlas(named: "Environment")
+        let landTexture = environmentAtlas.textureNamed("ground2")
+        let landRepeatNum = Int(ceil(self.size.width / landTexture.size().width))
         
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
+        
+        for i in 0...landRepeatNum {
+            let land = SKSpriteNode(texture: landTexture)
+            land.anchorPoint = CGPoint.zero // anchorPoint 어디 기준으로 이미지를 붙힐지
+            land.position = CGPoint(x: CGFloat(i) * land.size.width, y: 0)
+            land.zPosition = 3
+            land.physicsBody = SKPhysicsBody(rectangleOf: land.size, // land Size크기만큼의 물리 충돌 적용
+                                             center: CGPoint(x: land.size.width / 2, y: land.size.height / 2))
+            land.physicsBody?.categoryBitMask = PhysicsCategory.land
+            land.physicsBody?.isDynamic = false // 부딫혀도 아무 효과없게 하기 위해 False
+            land.physicsBody?.affectedByGravity = false // 중력에의해 계속 떨어지기 때문에 중력효과 없앰 
+            addChild(land)
             
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
+            let moveLeft = SKAction.moveBy(x: -landTexture.size().width, y: 0, duration: 20) // land size만큼 이동
+            let moveReset = SKAction.moveBy(x: landTexture.size().width, y: 0, duration: 0)
+            let moveSequence = SKAction.sequence([moveLeft, moveReset])
+            land.run(SKAction.repeatForever(moveSequence))
         }
+    
+        let skyTexture = environmentAtlas.textureNamed("skymountain")
+        let skyRepeatNum = Int(ceil(self.size.width / skyTexture.size().width))
+        
+        for i in 0...skyRepeatNum {
+            let sky = SKSpriteNode(texture: skyTexture)
+            sky.anchorPoint = CGPoint.zero
+            sky.position = CGPoint(x: CGFloat(i) * sky.size.width, y: 0)
+            sky.zPosition = 1
+            addChild(sky)
+            
+            let moveLeft = SKAction.moveBy(x: -skyTexture.size().width, y: 0, duration: 20)
+            let moveReset = SKAction.moveBy(x: skyTexture.size().width, y: 0, duration: 0)
+            let moveSequence = SKAction.sequence([moveLeft, moveReset])
+            sky.run(SKAction.repeatForever(moveSequence))
+        }
+           
+        
     }
     
     
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
+//
+//    // MARK: 장애물 만들기
+//    func createObstacle() {
+//
+//        let groundwall = SKSpriteNode(imageNamed: "obstacle")
+//        groundwall.position = CGPoint(x: self.size.width/2,
+//                                    y: self.size.height/7)
+//        groundwall.zPosition = 2
+//        groundwall.setScale(0.8)
+//        self.addChild(groundwall)
+//
+//
+//        let cellWall = SKSpriteNode(imageNamed: "downObt")
+//        cellWall.position = CGPoint(x: self.size.width/2,
+//                                    y: self.size.height * 0.8)
+//        cellWall.zPosition = 2
+//        cellWall.setScale(0.8)
+//        self.addChild(cellWall)
+//    }
+    
+    // MARK: 장애물 만들기
+    func setupObstacle(wallDistance: CGFloat) {
+        let environmentAtlas = SKTextureAtlas(named: "Environment")
+        let obstacleTexture = environmentAtlas.textureNamed("obstacle")
+        let downObstacleTexture = environmentAtlas.textureNamed("downObt")
+        
+        let obstacleUp = SKSpriteNode(texture: obstacleTexture)
+        obstacleUp.zPosition = 2
+        obstacleUp.physicsBody = SKPhysicsBody(rectangleOf: obstacleTexture.size())
+        obstacleUp.physicsBody?.categoryBitMask = PhysicsCategory.wallUp
+        obstacleUp.physicsBody?.isDynamic = false // 부딫혔을때 튕겨나가면 안됨
+        
+        let obstacleDown = SKSpriteNode(texture: downObstacleTexture)
+        obstacleDown.zPosition = 2
+        obstacleDown.physicsBody = SKPhysicsBody(rectangleOf: obstacleTexture.size())
+        obstacleDown.physicsBody?.categoryBitMask = PhysicsCategory.wallDown
+        obstacleDown.physicsBody?.isDynamic = false // 부딫혔을때 튕겨나가면 안됨
+        
+        let obstacleCollision = SKSpriteNode(color: UIColor.red, size: CGSize(width: 1, height: self.size.height))
+        obstacleCollision.zPosition = 2
+        obstacleCollision.physicsBody = SKPhysicsBody(rectangleOf: obstacleCollision.size)
+        obstacleCollision.physicsBody?.categoryBitMask = PhysicsCategory.score
+        obstacleCollision.physicsBody?.isDynamic = false
+        obstacleCollision.name = "collision"
+        
+        addChild(obstacleUp)
+        addChild(obstacleDown)
+        addChild(obstacleCollision)
+        
+        let max = self.size.height * 0.3 // (화면의 높이의 30%)
+        let xPos = self.size.width + obstacleUp.size.width
+        let yPos = CGFloat(arc4random_uniform(UInt32(max))) + environmentAtlas.textureNamed("land").size().height
+        let endPos = self.size.width + (obstacleDown.size.width * 2)
+      //  obstacleDown.position = CGPoint(x: xPos, y: yPos)
+      //  obstacleUp.position = CGPoint(x: xPos, y: obstacleDown.position.y + wallDistance + obstacleUp.size.height)
+        obstacleUp.setScale(0.8)
+        obstacleDown.setScale(0.8)
+          obstacleUp.position = CGPoint(x: xPos, y: yPos)
+          obstacleDown.position = CGPoint(x: xPos, y: obstacleDown.position.y + wallDistance + obstacleUp.size.height)
+        obstacleCollision.position = CGPoint(x: xPos, y: self.size.height / 2)
+        
+         let moveAct = SKAction.moveBy(x: CGFloat(-endPos), y: 0, duration: 6)
+        let moveSequence = SKAction.sequence([moveAct, SKAction.removeFromParent()])
+        
+        
+        obstacleUp.run(moveSequence)
+        obstacleDown.run(moveSequence)
+        obstacleCollision.run(moveSequence)
+    
+        
     }
     
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
+    
+    // MARK: 무한으로 움직여줘
+    func createForever(duration: TimeInterval) {
+        let create = SKAction.run { [unowned self] in
+            self.setupObstacle(wallDistance: 400)
+            
         }
+        let wait = SKAction.wait(forDuration: duration)
+        let actSeq = SKAction.sequence([create, wait])
+        run(SKAction.repeatForever(actSeq))
     }
     
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
+        self.frog.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+        self.frog.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 7))
+    }
+    
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+    
+        var collideBody = SKPhysicsBody() // frog가 아닌 다른 충돌 객체
+        
+        if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask {
+          
+            collideBody = contact.bodyB
+            
+        } else {
+           
+            collideBody = contact.bodyA
+            
         }
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
-    }
-    
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
-    }
-    
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
+        let collideType = collideBody.categoryBitMask
+        switch collideType {
+        case PhysicsCategory.land:
+            print("land")
+        case PhysicsCategory.wallUp:
+            print("위에 장애물")
+        case PhysicsCategory.wallDown:
+            print("아래장애물")
+        case PhysicsCategory.score:
+            print("점수")
+        default:
+            break 
+        }
     }
 }

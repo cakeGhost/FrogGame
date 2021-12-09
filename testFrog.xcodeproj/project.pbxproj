@@ -15,6 +15,7 @@
 		446C830427621E7400EBBC0B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 446C830227621E7400EBBC0B /* Main.storyboard */; };
 		446C830627621E7600EBBC0B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 446C830527621E7600EBBC0B /* Assets.xcassets */; };
 		446C830927621E7600EBBC0B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 446C830727621E7600EBBC0B /* LaunchScreen.storyboard */; };
+		446C8310276236EA00EBBC0B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 446C830F276236EA00EBBC0B /* Constants.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 		446C830327621E7400EBBC0B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		446C830527621E7600EBBC0B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		446C830827621E7600EBBC0B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		446C830F276236EA00EBBC0B /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +69,7 @@
 				446C830227621E7400EBBC0B /* Main.storyboard */,
 				446C830527621E7600EBBC0B /* Assets.xcassets */,
 				446C830727621E7600EBBC0B /* LaunchScreen.storyboard */,
+				446C830F276236EA00EBBC0B /* Constants.swift */,
 			);
 			path = testFrog;
 			sourceTree = "<group>";
@@ -144,6 +147,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				446C8310276236EA00EBBC0B /* Constants.swift in Sources */,
 				446C82FF27621E7300EBBC0B /* GameScene.swift in Sources */,
 				446C830127621E7400EBBC0B /* GameViewController.swift in Sources */,
 				446C82F927621E7300EBBC0B /* AppDelegate.swift in Sources */,
