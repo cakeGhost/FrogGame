@@ -15,19 +15,16 @@ class GameViewController: UIViewController {
         super.viewDidLoad()
         
         if let view = self.view as! SKView? {
-            // Load the SKScene from 'GameScene.sks'
-            if let scene = SKScene(fileNamed: "GameScene") {
-                // Set the scale mode to scale to fit the window
-                scene.scaleMode = .aspectFill
-                
-                // Present the scene
-                view.presentScene(scene)
-            }
             
-            view.ignoresSiblingOrder = true
+            let scene = GameScene(size: view.bounds.size)
+            scene.scaleMode = .aspectFill
+            view.presentScene(scene)
+            view.ignoresSiblingOrder = true // 화면에 표시되는 노드의 순서를 개발자가 직접 선정하지 않고, 컴파일러에게 맡기는거임
+                // true면 컴파일러가 알아서해줌
             
-            view.showsFPS = true
+           // view.showsFPS = true (프레임 수 보여주는거)
             view.showsNodeCount = true
+            view.showsPhysics = true
         }
     }
 
