@@ -11,8 +11,10 @@ import GameplayKit
 class GameScene: SKScene, SKPhysicsContactDelegate {
  
     var frog = SKSpriteNode()
+    var moving: SKNode!
     
     override func didMove(to view: SKView) {
+        moving = SKNode()
         createFrog()
         createEnvironment()
         self.physicsWorld.contactDelegate = self
@@ -23,16 +25,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: 개구리 만들기
     func createFrog() {
         frog = SKSpriteNode(imageNamed: "frog")
-        frog.position = CGPoint(x: self.size.width/2 - 100, y: 200)
-        frog.setScale(0.4)
+        //frog.position = CGPoint(x: self.size.width/2, y: 350)
+        frog.position = CGPoint(x: self.frame.size.width * 0.35, y: self.frame.size.height / 2) // 어디서떨어지는지
+        frog.setScale(0.3)
         frog.zPosition = 4
+        
+        
         frog.physicsBody = SKPhysicsBody(circleOfRadius: frog.size.height / 2)
+        
+        // 충돌
         frog.physicsBody?.categoryBitMask = PhysicsCategory.frog
-        frog.physicsBody?.contactTestBitMask = PhysicsCategory.land | PhysicsCategory.wallDown | PhysicsCategory.wallUp | PhysicsCategory.score
-        frog.physicsBody?.collisionBitMask = PhysicsCategory.land | PhysicsCategory.wallDown | PhysicsCategory.wallUp // 부딫혔을 때의를 확인해야함
+        frog.physicsBody?.contactTestBitMask = PhysicsCategory.wallDown | PhysicsCategory.wallUp | PhysicsCategory.score
+        
+        // 이 3개의 요소 부딫히면 충돌효과있음
+        frog.physicsBody?.collisionBitMask =  PhysicsCategory.wallDown | PhysicsCategory.wallUp | PhysicsCategory.land
         frog.physicsBody?.affectedByGravity = true
         frog.physicsBody?.isDynamic = true
         self.addChild(frog)
+        print(frog.position)
         
     }
     
@@ -48,21 +58,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let land = SKSpriteNode(texture: landTexture)
             land.anchorPoint = CGPoint.zero // anchorPoint 어디 기준으로 이미지를 붙힐지
             land.position = CGPoint(x: CGFloat(i) * land.size.width, y: 0)
+        //   land.position = CGPoint(x: CGFloat(i), y: -(self.frame.size.height / 2) * 0.25)
             land.zPosition = 3
-            land.physicsBody = SKPhysicsBody(rectangleOf: land.size, // land Size크기만큼의 물리 충돌 적용
+            land.physicsBody = SKPhysicsBody(rectangleOf: land.size , // land Size크기만큼의 물리 충돌 적용
                                              center: CGPoint(x: land.size.width / 2, y: land.size.height / 2))
+            
             land.physicsBody?.categoryBitMask = PhysicsCategory.land
-            land.physicsBody?.isDynamic = false // 부딫혀도 아무 효과없게 하기 위해 False
-            land.physicsBody?.affectedByGravity = false // 중력에의해 계속 떨어지기 때문에 중력효과 없앰 
+            land.physicsBody?.isDynamic = false
+            land.physicsBody?.affectedByGravity = false
             addChild(land)
             
             let moveLeft = SKAction.moveBy(x: -landTexture.size().width, y: 0, duration: 20) // land size만큼 이동
             let moveReset = SKAction.moveBy(x: landTexture.size().width, y: 0, duration: 0)
             let moveSequence = SKAction.sequence([moveLeft, moveReset])
             land.run(SKAction.repeatForever(moveSequence))
+            print(land.size.height)
         }
     
-        let skyTexture = environmentAtlas.textureNamed("skymountain")
+        let skyTexture = environmentAtlas.textureNamed("sky4")
         let skyRepeatNum = Int(ceil(self.size.width / skyTexture.size().width))
         
         for i in 0...skyRepeatNum {
@@ -81,27 +94,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
-    
-//
-//    // MARK: 장애물 만들기
-//    func createObstacle() {
-//
-//        let groundwall = SKSpriteNode(imageNamed: "obstacle")
-//        groundwall.position = CGPoint(x: self.size.width/2,
-//                                    y: self.size.height/7)
-//        groundwall.zPosition = 2
-//        groundwall.setScale(0.8)
-//        self.addChild(groundwall)
-//
-//
-//        let cellWall = SKSpriteNode(imageNamed: "downObt")
-//        cellWall.position = CGPoint(x: self.size.width/2,
-//                                    y: self.size.height * 0.8)
-//        cellWall.zPosition = 2
-//        cellWall.setScale(0.8)
-//        self.addChild(cellWall)
-//    }
-    
     // MARK: 장애물 만들기
     func setupObstacle(wallDistance: CGFloat) {
         let environmentAtlas = SKTextureAtlas(named: "Environment")
@@ -112,13 +104,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         obstacleUp.zPosition = 2
         obstacleUp.physicsBody = SKPhysicsBody(rectangleOf: obstacleTexture.size())
         obstacleUp.physicsBody?.categoryBitMask = PhysicsCategory.wallUp
-        obstacleUp.physicsBody?.isDynamic = false // 부딫혔을때 튕겨나가면 안됨
+        obstacleUp.physicsBody?.isDynamic = false
         
         let obstacleDown = SKSpriteNode(texture: downObstacleTexture)
         obstacleDown.zPosition = 2
         obstacleDown.physicsBody = SKPhysicsBody(rectangleOf: obstacleTexture.size())
-        obstacleDown.physicsBody?.categoryBitMask = PhysicsCategory.wallDown
-        obstacleDown.physicsBody?.isDynamic = false // 부딫혔을때 튕겨나가면 안됨
+        obstacleDown.physicsBody?.categoryBitMask = PhysicsCategory.wallUp
+        obstacleDown.physicsBody?.isDynamic = false
         
         let obstacleCollision = SKSpriteNode(color: UIColor.red, size: CGSize(width: 1, height: self.size.height))
         obstacleCollision.zPosition = 2
@@ -155,10 +147,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     
-    // MARK: 무한으로 움직여줘
+    // MARK: 무한으로 생겨나줘
     func createForever(duration: TimeInterval) {
         let create = SKAction.run { [unowned self] in
-            self.setupObstacle(wallDistance: 400)
+            self.setupObstacle(wallDistance: 450)
             
         }
         let wait = SKAction.wait(forDuration: duration)
@@ -168,8 +160,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        self.frog.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-        self.frog.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 7))
+    //    self.frog.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+   //     self.frog.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 50))
+        
+        if moving.speed > 0 {
+            for _ in touches {
+                frog.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+                frog.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 50))
+                    }
+                }
     }
     
     
